@@ -1,0 +1,19 @@
+# Environment files
+.env
+.env.*
+*.env
+
+# SQL files
+*.sql
+*.dump
+*.pgsql
+*.psql
+
+# Database backups
+*.bak
+*.backup
+
+# Ignore local database files
+*.db
+*.sqlite
+*.sqlite3
