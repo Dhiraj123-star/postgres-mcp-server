@@ -1,8 +1,9 @@
 
+# 🚀 Enhanced MCP PostgreSQL Server + AI + FastAPI
 
-# 🚀 Enhanced MCP PostgreSQL Server + AI
+An **Enhanced Model Context Protocol (MCP) server** that connects **PostgreSQL** with **OpenAI GPT-4o-mini**, now extended with **FastAPI endpoints** to enable **natural language to SQL query execution** via both **MCP client** and **REST API**.
 
-An **Enhanced Model Context Protocol (MCP) server** that connects **PostgreSQL** with **OpenAI GPT-4o-mini** to enable **natural language to SQL query execution**.
+---
 
 ## 🔎 Core Functionality
 
@@ -19,20 +20,30 @@ An **Enhanced Model Context Protocol (MCP) server** that connects **PostgreSQL**
   SQL query results are neatly formatted in a table-like output.
 
 * 📝 **SQL Validation via AI**
-  Validate raw SQL queries with AI for **syntax correctness**, **schema compatibility**, **performance**, and **security**.
-
-* ⚙️ **Available Tools**
-
-  * `natural_language_query` → Ask database questions in plain English.
-  * `execute_sql` → Run raw SQL queries (with safety checks).
-  * `get_schema` → Fetch schema details for all or specific tables.
-  * `validate_sql` → Validate SQL queries without execution.
-
-* 💬 **Interactive Client**
-  The MCP client provides a **command-line interface** to:
-
-  * List available tools.
-  * Run natural language queries.
-  * Get real-time query results.
+  Validate raw SQL queries with AI for **syntax correctness**, **schema compatibility**, and **performance**.
 
 ---
+
+## ⚡ New Enhancement: FastAPI Endpoints
+
+* **Natural Language Query Endpoint** → Convert plain English into SQL and get results.
+* **Execute SQL Endpoint** → Run raw SQL queries (restricted to safe operations).
+* **Get Schema Endpoint** → Retrieve schema details for all or specific tables.
+* **Validate SQL Endpoint** → Validate SQL queries without executing them.
+
+---
+
+## ⚙️ Available Tools (MCP + API)
+
+* `natural_language_query` → Ask database questions in plain English.
+* `execute_sql` → Run raw SQL queries (with safety checks).
+* `get_schema` → Fetch schema details for all or specific tables.
+* `validate_sql` → Validate SQL queries without execution.
+
+---
+
+## 💬 Interactive Client + REST API
+
+* **MCP Client** → Use CLI to run tools interactively.
+* **FastAPI** → Access all tools via RESTful endpoints.
+
