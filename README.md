@@ -47,3 +47,14 @@ An **Enhanced Model Context Protocol (MCP) server** that connects **PostgreSQL**
 * **MCP Client** → Use CLI to run tools interactively.
 * **FastAPI** → Access all tools via RESTful endpoints.
 
+---
+
+## 🔄 CI/CD Pipeline Integration
+
+* **GitHub Actions Workflow** → Automated builds and tests on every push.
+* **Docker Image Build & Push** → Publishes latest images to **DockerHub (`dhiraj918106/...`)**.
+* **Deployment Ready** → Simple, production-style pipeline to keep images updated.
+
+---
+
+
