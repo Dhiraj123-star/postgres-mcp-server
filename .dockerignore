@@ -1,0 +1,40 @@
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+*.env
+
+# SQL and DB backups
+*.sql
+*.dump
+*.pgsql
+*.psql
+*.bak
+*.backup
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git
+.gitignore
+
+# Docker artifacts
+Dockerfile
+docker-compose.yml
