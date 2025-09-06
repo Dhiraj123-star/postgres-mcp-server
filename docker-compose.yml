@@ -16,5 +16,16 @@ services:
       timeout: 10s
       retries: 5
 
+  fastapi:
+    build: .
+    container_name: fastapi-mcp
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
