@@ -1,102 +1,145 @@
+"""
+FastAPI wrapper for MCP client to expose natural language to SQL
+and other MCP tools as REST endpoints.
+"""
+
 import asyncio
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+import traceback  # ✅ Added for detailed error logs
+
 from mcp import ClientSession
 from mcp.client.stdio import stdio_client
 from mcp import StdioServerParameters
 
-async def main():
-    # Define how to launch the MCP server over stdio
+# FastAPI app
+app = FastAPI(
+    title="MCP FastAPI Integration",
+    description="Expose MCP PostgreSQL AI-powered tools over REST APIs",
+    version="1.0.0"
+)
+
+# Request models
+class NLQueryRequest(BaseModel):
+    query: str
+    explain: Optional[bool] = True
+
+class SQLRequest(BaseModel):
+    sql: str
+
+class SchemaRequest(BaseModel):
+    table_name: Optional[str] = None
+
+
+# Utility: Run client session with MCP server
+async def run_mcp_tool(tool_name: str, arguments: dict):
     server_params = StdioServerParameters(
         command="python",
         args=["mcp_server.py"],  # your server script
-        env=None  # optional: env variables
+        env=None
     )
 
     async with stdio_client(server_params) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
-            # Initialize the MCP session
             await session.initialize()
-
-            # List tools exposed by the server
             tools_response = await session.list_tools()
-            print("Raw list_tools response:", tools_response)  # Debug output
 
-            # Handle the ListToolsResult object
+            # Extract tools properly
             tools = []
             if hasattr(tools_response, 'tools'):
                 tools = tools_response.tools
             elif isinstance(tools_response, list):
                 tools = tools_response
-            else:
-                print(f"Error: Unexpected response format from list_tools: {type(tools_response)}")
-                return
 
-            # Print available tools
-            print("Available tools:")
-            if not tools:
-                print("No tools found in response")
-                return
-
-            for tool in tools:
-                try:
-                    print(f"- {tool.name}: {tool.description}")
-                except AttributeError as e:
-                    print(f"Error: Invalid tool object format: {e}")
-                    print(f"Tool object: {tool}")
-                    continue
-
-            # Check if natural_language_query tool is available
-            if not any(tool.name == "natural_language_query" for tool in tools if hasattr(tool, 'name')):
-                print("\nError: natural_language_query tool not found")
-                return
-
-            # Interactive loop for user queries
-            print("\nEnter a natural language query (type 'quit' to exit):")
-            while True:
-                nl_query = input("> ").strip()
-                if nl_query.lower() == "quit":
-                    print("Exiting...")
-                    break
-
-                if not nl_query:
-                    print("Please enter a valid query.")
-                    continue
-
-                # Call the natural_language_query tool
-                response = await session.call_tool(
-                    "natural_language_query",
-                    {"query": nl_query, "explain": True}
+            if not any(
+                hasattr(tool, "name") and tool.name == tool_name for tool in tools
+            ):
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Tool '{tool_name}' not found in MCP server"
                 )
-                print("\nRaw Natural Language Query Response:", response)  # Debug output
-                print("\nNatural Language Query Response:")
-                
-                # Handle the CallToolResult object
-                content = []
-                if hasattr(response, 'content'):
-                    content = response.content
-                elif isinstance(response, list):
-                    content = response
+
+            response = await session.call_tool(tool_name, arguments)
+
+            # Extract content
+            content = []
+            if hasattr(response, 'content'):
+                content = response.content
+            elif isinstance(response, list):
+                content = response
+
+            result_texts = []
+            for item in content:
+                if hasattr(item, 'text'):
+                    result_texts.append(item.text)
+                elif isinstance(item, tuple) and len(item) >= 2:
+                    result_texts.append(item[1])
                 else:
-                    print(f"Error: Unexpected response format from call_tool: {type(response)}")
-                    continue
+                    result_texts.append(str(item))
 
-                # Process the content list
-                if not content:
-                    print("No content found in response")
-                    continue
+            return result_texts
 
-                for item in content:
-                    try:
-                        # Check if item is a TextContent object with a text attribute
-                        if hasattr(item, 'text'):
-                            print(item.text)
-                        # Handle case where item is a tuple (e.g., (type, text))
-                        elif isinstance(item, tuple) and len(item) >= 2:
-                            print(item[1])  # Assume the second element is the text
-                        else:
-                            print(f"Unexpected response item format: {item}")
-                    except Exception as e:
-                        print(f"Error processing response item: {e}")
-                        print(f"Item: {item}")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Endpoints
+
+@app.post("/nl-query")
+async def natural_language_query(request: NLQueryRequest):
+    """
+    Convert natural language query to SQL and execute using AI.
+    """
+    try:
+        result = await run_mcp_tool(
+            "natural_language_query",
+            {"query": request.query, "explain": request.explain}
+        )
+        return {"results": result}
+    except Exception as e:
+        print("❌ Error in /nl-query:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/execute-sql")
+async def execute_sql(request: SQLRequest):
+    """
+    Execute raw SQL query.
+    """
+    try:
+        result = await run_mcp_tool("execute_sql", {"sql": request.sql})
+        return {"results": result}
+    except Exception as e:
+        print("❌ Error in /execute-sql:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/get-schema")
+async def get_schema(request: SchemaRequest):
+    """
+    Retrieve database schema (optionally for a specific table).
+    """
+    try:
+        args = {}
+        if request.table_name:
+            args["table_name"] = request.table_name
+        result = await run_mcp_tool("get_schema", args)
+        return {"results": result}
+    except Exception as e:
+        print("❌ Error in /get-schema:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/validate-sql")
+async def validate_sql(request: SQLRequest):
+    """
+    Validate SQL query using AI.
+    """
+    try:
+        result = await run_mcp_tool("validate_sql", {"sql": request.sql})
+        return {"results": result}
+    except Exception as e:
+        print("❌ Error in /validate-sql:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
